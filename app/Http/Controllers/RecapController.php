@@ -73,4 +73,33 @@ class RecapController extends Controller
 
         return view('recaps.journal', compact('journals'));
     }
+
+    public function leave()
+    {
+        $leaves = DB::table('attendances_leave')
+            ->join('auth_user', 'attendances_leave.user_id', '=', 'auth_user.id')
+            ->select('attendances_leave.id', 'auth_user.first_name', 'attendances_leave.leave_mode', 'attendances_leave.leave_type', 'attendances_leave.reason', 'attendances_leave.attachment', 'attendances_leave.approve', 'attendances_leave.created_at')
+            ->latest('attendances_leave.created_at')
+            ->paginate(50);
+
+        return view('recaps.leave', compact('leaves'));
+    }
+
+    public function leaveAccept($leave)
+    {
+        DB::table('attendances_leave')
+            ->where('id', $leave)
+            ->update(['approve' => true]);
+
+        return back()->with('success', 'Berhasil mengupdate status persetujuan');
+    }
+
+    public function leaveDecline($leave)
+    {
+        DB::table('attendances_leave')
+            ->where('id', $leave)
+            ->update(['approve' => false]);
+
+        return back()->with('success', 'Berhasil mengupdate status persetujuan');
+    }
 }

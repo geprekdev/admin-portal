@@ -30,5 +30,14 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/journal', [RecapController::class, 'journal'])
             ->name('recaps.journal');
+
+        Route::get('/leave', [RecapController::class, 'leave'])
+            ->name('recaps.leave');
+
+        Route::put('/leave/{leave}/accept', [RecapController::class, 'leaveAccept'])
+            ->name('recaps.leave.accept');
+
+        Route::put('/leave/{leave}/decline', [RecapController::class, 'leaveDecline'])
+            ->name('recaps.leave.decline');
     });
 });

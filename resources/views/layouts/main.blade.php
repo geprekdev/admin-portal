@@ -113,6 +113,16 @@
                 </p>
               </a>
             </li>
+
+            <li class="nav-item">
+              <a href="{{ route('recaps.leave') }}"
+                class="nav-link {{ str_contains(request()->path(), 'recaps/leave') ? 'active' : '' }}">
+                <i class="nav-icon fas fa-paperclip"></i>
+                <p>
+                  Izin
+                </p>
+              </a>
+            </li>
           </ul>
         </nav>
       </div>
