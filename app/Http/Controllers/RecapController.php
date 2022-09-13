@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -33,28 +34,45 @@ class RecapController extends Controller
         return view('recaps.non-student-attendance', compact('attendances'));
     }
 
-    public function classroomAttendance()
+    public function classroomAttendance(Request $request)
     {
-        $subjects = DB::table('classrooms_classroomsubject')
-            ->join('classrooms_classroom', 'classrooms_classroomsubject.classroom_id', '=', 'classrooms_classroom.id')
-            ->select('classrooms_classroomsubject.id', 'classrooms_classroomsubject.name as subject', 'classrooms_classroom.grade as classroom');
+        $classrooms = DB::table('classrooms_classroom')
+            ->select('grade')
+            ->orderBy('grade')
+            ->get();
 
-        $timetables = DB::table('classrooms_classroomtimetable')
-            ->joinSub($subjects, 'classrooms_subject', function ($join) {
-                $join->on('classrooms_classroomtimetable.subject_id', '=', 'classrooms_subject.id');
-            })
-            ->select('classrooms_classroomtimetable.id', 'classrooms_subject.classroom', 'classrooms_subject.subject', 'classrooms_classroomtimetable.date', 'classrooms_classroomtimetable.start_time', 'classrooms_classroomtimetable.end_time');
+        if ($request->has('classroom') || $request->has('date')) {
+            $subjects = DB::table('classrooms_classroomsubject')
+                ->join('classrooms_classroom', 'classrooms_classroomsubject.classroom_id', '=', 'classrooms_classroom.id')
+                ->select('classrooms_classroomsubject.id', 'classrooms_classroomsubject.name as subject', 'classrooms_classroom.grade as classroom');
 
-        $attendances = DB::table('classrooms_classroomattendance')
-            ->join('auth_user', 'classrooms_classroomattendance.student_id', '=', 'auth_user.id')
-            ->joinSub($timetables, 'classrooms_timetable', function ($join) {
-                $join->on('classrooms_classroomattendance.timetable_id', '=', 'classrooms_timetable.id');
-            })
-            ->select('auth_user.first_name', 'classrooms_classroomattendance.status', 'classrooms_timetable.classroom', 'classrooms_timetable.subject', 'classrooms_timetable.start_time', 'classrooms_timetable.end_time', 'classrooms_timetable.date')
-            ->latest('classrooms_classroomattendance.id')
-            ->paginate(36);
+            $timetables = DB::table('classrooms_classroomtimetable')
+                ->joinSub($subjects, 'classrooms_subject', function ($join) {
+                    $join->on('classrooms_classroomtimetable.subject_id', '=', 'classrooms_subject.id');
+                })
+                ->select('classrooms_classroomtimetable.id', 'classrooms_subject.classroom', 'classrooms_subject.subject', 'classrooms_classroomtimetable.date', 'classrooms_classroomtimetable.start_time', 'classrooms_classroomtimetable.end_time');
 
-        return view('recaps.classroom-attendance', compact('attendances'));
+            $attendances = DB::table('classrooms_classroomattendance')
+                ->join('auth_user', 'classrooms_classroomattendance.student_id', '=', 'auth_user.id')
+                ->joinSub($timetables, 'classrooms_timetable', function ($join) {
+                    $join->on('classrooms_classroomattendance.timetable_id', '=', 'classrooms_timetable.id');
+                })
+                ->select('auth_user.first_name', 'classrooms_classroomattendance.status', 'classrooms_timetable.classroom', 'classrooms_timetable.subject', 'classrooms_timetable.start_time', 'classrooms_timetable.end_time', 'classrooms_timetable.date')
+                ->where('classrooms_timetable.classroom', $request->classroom)
+                ->where('classrooms_timetable.date', $request->date)
+                ->get()
+                ->sortBy('start_time')
+                ->groupBy(['subject', 'start_time']);
+
+            // dd($attendances);
+
+            $class = $request->classroom;
+            $date = Carbon::parse($request->date)->format('d F Y');
+
+            return view('recaps.classroom-attendance', compact('attendances', 'classrooms', 'class', 'date'));
+        }
+
+        return view('recaps.classroom-attendance', compact('classrooms'));
     }
 
     public function journal()

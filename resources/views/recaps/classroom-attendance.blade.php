@@ -1,119 +1,114 @@
 @extends('layouts.main')
 
 @section('title')
-  <title>Rekap Kehadiran Kelas Siswa | Siamawolu Admin</title>
+  <title>Rekap Kehadiran Kelas {{ isset($class) && isset($date) ? "{$class} - {$date}" : 'Siswa' }} | Siamawolu Admin
+  </title>
 @endsection
 
 @section('css')
   <link rel="stylesheet" href="{{ asset('assets/css/select2/select2.min.css') }}">
-  <link rel="stylesheet" href="{{ asset('assets/css/datatables/dataTables.bootstrap4.min.css') }}" />
-  <link rel="stylesheet" href="{{ asset('assets/css/datatables/responsive.bootstrap4.min.css') }}" />
-  <link rel="stylesheet" href="{{ asset('assets/css/datatables/buttons.bootstrap4.min.css') }}" />
 @endsection
 
 @section('header')
-  <h1 class="m-0">Rekap Kehadiran Kelas Siswa</h1>
+  <h1 class="m-0">Rekap Kehadiran Kelas {{ $class ?? 'Siswa' }}</h1>
 @endsection
 
 @section('content')
-  <div class="col-12">
+  <div class="container">
     <div class="card">
-      {{-- <div class="card-tools d-flex flex-column flex-md-row justify-content-end mt-3 mx-4">
+      <div class="card-tools d-flex flex-column flex-md-row justify-content-end mt-3 mx-4">
         <form class="d-flex flex-column flex-md-row" action="{{ route('recaps.classroom-attendance') }}" method="get">
+          <div class="form-group mr-0 mr-md-3 mt-3 mt-md-0">
+            <select class="form-control select2" name="classroom" style="width: 100%;">
+              <option disabled
+                {{ request()->query('classroom') === '' || request()->query('classroom') === null ? 'selected' : '' }}>--
+                Pilih Kelas --</option>
+              @foreach ($classrooms as $classroom)
+                <option value="{{ $classroom->grade }}"
+                  {{ request()->query('classroom') == $classroom->grade ? 'selected' : '' }}>{{ $classroom->grade }}
+                </option>
+              @endforeach
+            </select>
+          </div>
+
+          <div class="form-group mr-0 mr-md-3 mt-3 mt-md-0">
+            <input class="form-control" type="date" name="date"
+              value="{{ request()->query('date') ?? today()->format('Y-m-d') }}">
+          </div>
 
           <button type="submit" class="btn btn-outline-secondary mt-3 mt-md-0" style="height: fit-content;">
             Filter
           </button>
         </form>
-      </div> --}}
-
-      <div class="card-body">
-        <table id="classroom-attendances-table" class="table table-bordered table-striped">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Nama</th>
-              <th>Status</th>
-              <th>Kelas</th>
-              <th>Mapel</th>
-              <th>Mulai</th>
-              <th>Selesai</th>
-              <th>Tanggal</th>
-            </tr>
-          </thead>
-          <tbody>
-            @foreach ($attendances as $attendance)
-              <tr>
-                <td>{{ $loop->iteration }}</td>
-                <td>{{ $attendance->first_name }}</td>
-                <td>
-                  <span
-                    class="badge 
-                    @switch($attendance->status)
-                      @case('ALPHA')
-                        {{ 'badge-danger' }}
-                        @break
-                      @case('HADIR')
-                        {{ 'badge-success' }}
-                        @break
-                      @case('IJIN')
-                        {{ 'badge-warning' }}
-                        @break
-                      @case('SAKIT')
-                        {{ 'badge-info' }}
-                        @break    
-                    @endswitch">
-                    {{ $attendance->status }}
-                  </span>
-                </td>
-                <td>{{ $attendance->classroom }}</td>
-                <td>{{ $attendance->subject }}</td>
-                <td>{{ Carbon\Carbon::parse($attendance->start_time)->format('H:i:s') }}</td>
-                <td>{{ Carbon\Carbon::parse($attendance->end_time)->format('H:i:s') }}</td>
-                <td>{{ Carbon\Carbon::parse($attendance->date)->format('d F Y') }}</td>
-              </tr>
-            @endforeach
-          </tbody>
-        </table>
-
-        <div class="mt-3 mx-3">
-          {{ $attendances->links() }}
-        </div>
       </div>
+
+      @if (isset($attendances))
+        <div class="card-body">
+          @foreach ($attendances as $subject => $times)
+            <h4>{{ $subject }}</h4>
+            <div class="row">
+              @foreach ($times as $time => $absences)
+                <div class="col-md-6">
+                  <h5>
+                    {{ Carbon\Carbon::parse($time)->format('H:i') . ' - ' . Carbon\Carbon::parse($absences[0]->end_time)->format('H:i') }}
+                  </h5>
+                  <table class="table table-bordered table-striped mb-5">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Nama</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @foreach ($absences as $absence)
+                        <tr>
+                          <td>{{ $loop->iteration }}</td>
+                          <td>{{ $absence->first_name }}</td>
+                          <td>
+                            <span
+                              class="badge 
+                              @switch($absence->status)
+                                @case('ALPHA')
+                                  {{ 'badge-danger' }}
+                                  @break
+                                @case('HADIR')
+                                  {{ 'badge-success' }}
+                                  @break
+                                @case('IJIN')
+                                  {{ 'badge-warning' }}
+                                  @break
+                                @case('SAKIT')
+                                  {{ 'badge-info' }}
+                                  @break    
+                              @endswitch">
+                              {{ $absence->status }}
+                            </span>
+                          </td>
+                        </tr>
+                      @endforeach
+                    </tbody>
+                  </table>
+                </div>
+              @endforeach
+            </div>
+          @endforeach
+        </div>
+      @else
+        <div class="card-body text-center">
+          <h3>Silahkan pilih kelas dan tanggal terlebih dahulu.</h3>
+        </div>
+      @endif
     </div>
   </div>
 @endsection
 
 @section('js')
   <script src="{{ asset('assets/js/select2/select2.full.min.js') }}"></script>
-  <script src="{{ asset('assets/js/datatables/jquery.dataTables.min.js') }}"></script>
-  <script src="{{ asset('assets/js/datatables/dataTables.bootstrap4.min.js') }}"></script>
-  <script src="{{ asset('assets/js/datatables/dataTables.responsive.min.js') }}"></script>
-  <script src="{{ asset('assets/js/datatables/responsive.bootstrap4.min.js') }}"></script>
-  <script src="{{ asset('assets/js/datatables/dataTables.buttons.min.js') }}"></script>
-  <script src="{{ asset('assets/js/datatables/buttons.bootstrap4.min.js') }}"></script>
-  <script src="{{ asset('assets/js/datatables/jszip.min.js') }}"></script>
-  <script src="{{ asset('assets/js/datatables/pdfmake.min.js') }}"></script>
-  <script src="{{ asset('assets/js/datatables/vfs_fonts.js') }}"></script>
-  <script src="{{ asset('assets/js/datatables/buttons.html5.min.js') }}"></script>
-  <script src="{{ asset('assets/js/datatables/buttons.print.min.js') }}"></script>
 
   <script>
     $(document).ready(function() {
       $(".select2").select2();
-
-      $("#classroom-attendances-table")
-        .DataTable({
-          searching: false,
-          responsive: true,
-          autoWidth: false,
-          info: false,
-          paging: false,
-          buttons: ["excel", "pdf", "print"],
-        })
-        .buttons()
-        .container()
-        .appendTo("#classroom-attendances-table_wrapper .col-md-6:eq(0)");
     });
   </script>
 @endsection
